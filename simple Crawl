@@ -1,4 +1,4 @@
-#this snippet of code is a part of bigger project and won't work by itself without any modifications to the code
+#this snippet of code is a part of bigger project and won't work by itself without any modifications to the code, this particular snippet is a crawl script used to find directories in web applications.
 
 def Crawl(url_w,depth_w,wordlist_w,actual_depth_w=0):
     if actual_depth_w >= depth_w:
