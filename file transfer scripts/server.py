@@ -17,7 +17,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
         koncowka_str = koncowka_bajty.decode()
         print(plik_bajty)
         nazwa_pliku = f'{id({})}.bin'
-        sciezka = r"C:\Users\opyrc\Desktop\test" + f"\{nazwa_pliku}.{koncowka_str}"
+        sciezka = r"C:\Users\User\Desktop\test" + f"\{nazwa_pliku}.{koncowka_str}"
         
         with open(sciezka, "wb") as plik:
             plik.write(plik_bajty)
