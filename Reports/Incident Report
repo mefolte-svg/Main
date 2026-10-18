@@ -16,7 +16,7 @@ Stakeholder Impact: Exposure of customers' and clients' data, Possible legal lia
 Exposure of employees' data
 
 2.Technical analysis
-Affected systems: Almost every device accross internal network including domain controllers, servers, backup servers, file servers
+Affected systems: Almost every device across internal network including domain controllers, servers, backup servers, file servers
 Indicators of Compromise (IoCs):opmanager[.]pro, download-center[.]online, ev2sirbd269o5j[.]org - BumbleBee, 
 2rxyt8yrhq0bgj[.]org - BumbleBee, d1hmxkpwby0d4s[.]org - BumbleBee, yj6jurm5qqkye5[.]org - BumbleBee, ewujsfb1dp5ran[.]org - BumbleBee,
 8doj8uvx604eck[.]org - BumbleBee, kwywztxoo2xdot[.]org - BumbleBee, ky1d1p1daahe5t[.]org - BumbleBee, ovh1kn1tcqw5kp[.]org - BumbleBee,
